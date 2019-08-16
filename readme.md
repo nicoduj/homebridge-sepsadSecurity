@@ -10,8 +10,6 @@
 [![Greenkeeper badge](https://badges.greenkeeper.io/nicoduj/homebridge-sepsadSecurity.svg)](https://greenkeeper.io/)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
-<img src="https://user-images.githubusercontent.com/19813688/48661529-729f9600-ea73-11e8-8051-37adfd687922.PNG" width="25%" align="right"> 
-<img src="https://user-images.githubusercontent.com/19813688/48661518-4c79f600-ea73-11e8-9c2f-45a8958106a5.PNG" width="25%" align="right">
 
 Plugin for controlling your [sepsad security system](https://www.sepsad-telesurveillance.fr/telesurveillance-integrale.aspx) from [Sepsad](https://www.sepsad-telesurveillance.fr) through [HomeBridge](https://github.com/nfarina/homebridge) .
 
