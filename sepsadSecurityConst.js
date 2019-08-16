@@ -1,0 +1,14 @@
+ACTIVATE_COMMAND = '/control/start/';
+STOP_COMMAND = '/control/park/duration/timer';
+ACTIVATED = 'ACTIVATED';
+PARTIAL = 'PARTIAL';
+DISABLED = 'DISABLED';
+UNKNOWN = 'UNKNOWN';
+
+module.exports = {
+  ACTIVATE_COMMAND,
+  STOP_COMMAND,
+  ACTIVATED,
+  PARTIAL,
+  DISABLED,
+};
