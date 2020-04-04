@@ -7,7 +7,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/nicoduj/homebridge-sepsadSecurity/badge)](https://www.codefactor.io/repository/github/nicoduj/homebridge-sepsadSecurity)
 [![Build Status](https://travis-ci.com/nicoduj/homebridge-sepsadSecurity.svg?branch=master)](https://travis-ci.com/nicoduj/homebridge-sepsadSecurity)
 [![Known Vulnerabilities](https://snyk.io/test/github/nicoduj/homebridge-sepsadSecurity/badge.svg?targetFile=package.json)](https://snyk.io/test/github/nicoduj/homebridge-sepsadSecurity?targetFile=package.json)
-[![Greenkeeper badge](https://badges.greenkeeper.io/nicoduj/homebridge-sepsadSecurity.svg)](https://greenkeeper.io/)
+
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
 
