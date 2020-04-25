@@ -169,6 +169,8 @@ SepsadSecurityAPI.prototype = {
               that.log('ERROR - connect body : ' + JSON.stringify(body));
               that.emit('securitySystemRefreshError');
             } else {
+              that.log('INFO - system Mode : ' + body.securityParameters.mode);
+
               if (body.securityParameters.mode == 'OFF')
                 that.securitySystem.state = SepsadSecurityConst.DISABLED;
               else that.securitySystem.state = SepsadSecurityConst.ACTIVATED;
