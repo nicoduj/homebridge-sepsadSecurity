@@ -20,6 +20,16 @@
         "title": "Sepsad account password",
         "type": "string"
       },
+      "originSession": {
+        "title": "Alarm type - originSession",
+        "type": "string",
+        "default": "SEPSAD"
+      },
+      "allowActivation": {
+        "title": "Alarm type",
+        "type": "boolean",
+        "default": false
+      },
       "refreshTimer": {
         "title": "Refresh timer",
         "type": "integer",

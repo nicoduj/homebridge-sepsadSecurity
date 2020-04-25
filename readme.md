@@ -17,7 +17,8 @@ Might also work with [EPS] system since they seemed to be using same technical a
 It was tested on my personnal installation which is nearly 4 years old so might not be working with latest installations ...
 
 **_ !!!! IMPORTANT !!! _**
-**_ PLEASE NOTE THAT SINCE DEACTVATING ISN OT ALLOWED THROUGH API, IT WON'T BE POSSIBLE TO DEACTIVATE THE SYSTEM THROUGH THE PLUGIN / HOMEBRIDGE _**
+**_ PLEASE NOTE THAT SINCE DEACTVATING IS NOT ALLOWED THROUGH API, IT WON'T BE POSSIBLE TO DEACTIVATE THE SYSTEM THROUGH THE PLUGIN / HOMEBRIDGE _**
+**_ so defautl option to activate is off _**
 **_ !!!! IMPORTANT !!! _**
 
 `npm install -g homebridge-sepsadSecurity`
@@ -31,7 +32,9 @@ Config as below:
   {
     "platform": "HomebridgeSepsadSecurity",
     "login": "123456",
-	  "password": "toto"
+    "password": "toto",
+    "originSession": "SEPSAD",
+    "allowActivation": false
   }
 ]
 ```
@@ -41,7 +44,12 @@ Fields:
 - `platform` must be "HomebridgeSepsadSecurity" (required).
 - `login` login used for your sepsad account (required).
 - `password` password of your sepsad account (required).
+- `originSession` defaults to "SEPSAD". Can try other values for EPS, might work who knows :)
 - `refreshTimer` Optional - enable refresh of security System state every X seconds, for automation purpose if you need to activate something else based on its state change (defaults : disable, accepted range : 60-3600s).
+- `maxWaitTimeForOperation` Optional - set the maximum time that we wait for operation to complete. When elapsed, check the current State again and updates accordingly. (defaults : 20s, accepted range : 30-90s).
+- `refreshTimerDuringOperation` Optional - set the refresh timer during operation in progress to detect the end of the operation. (defaults : 5s, accepted range : 2-15s).
+- `allowActivation` Optional - set to true if you want to allow activation of the system. **PLEASE READ IMPORTANT NOTE AT THE BEGINNING OF THIS README**
+- `cleanCache` Set it to true in case you want to remove the cached accessory (only those from this plugin). You have to restart homebridge after applying the option. Remove it after restart, otherwise it will be recreated at each startup.
 
 ## Changelog
 

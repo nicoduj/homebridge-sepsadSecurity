@@ -14,18 +14,20 @@ function mySepsadSecurityPlatform(log, config, api) {
   this.log = log;
   this.login = config['login'];
   this.password = config['password'];
-  this.refreshTimer = SepsadSecurityTools.checkTimer(config['refreshTimer']);
-  this.refreshTimerDuringOperation = SepsadSecurityTools.checkParemeter(
+
+  this.refreshTimer = SepsadSecurityTools.checkParameter(config['refreshTimer'], 30, 600, 180);
+
+  this.refreshTimerDuringOperation = SepsadSecurityTools.checkParameter(
     config['refreshTimerDuringOperation'],
     2,
     15,
-    10
+    5
   );
-  this.maxWaitTimeForOperation = SepsadSecurityTools.checkParemeter(
+  this.maxWaitTimeForOperation = SepsadSecurityTools.checkParameter(
     config['maxWaitTimeForOperation'],
     30,
     90,
-    45
+    20
   );
   this.originSession = config['originSession'] ? config['originSession'] : 'SEPSAD';
 
