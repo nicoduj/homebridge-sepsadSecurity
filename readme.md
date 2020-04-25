@@ -1,8 +1,8 @@
 # homebridge-sepsadSecurity
 
-[![npm](https://img.shields.io/npm/v/homebridge-sepsadSecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadSecurity)
-[![npm](https://img.shields.io/npm/dw/homebridge-sepsadSecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadSecurity)
-[![npm](https://img.shields.io/npm/dt/homebridge-sepsadSecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadSecurity)
+[![npm](https://img.shields.io/npm/v/homebridge-sepsadsecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadsecurity)
+[![npm](https://img.shields.io/npm/dw/homebridge-sepsadsecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadsecurity)
+[![npm](https://img.shields.io/npm/dt/homebridge-sepsadsecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadsecurity)
 
 [![CodeFactor](https://www.codefactor.io/repository/github/nicoduj/homebridge-sepsadSecurity/badge)](https://www.codefactor.io/repository/github/nicoduj/homebridge-sepsadSecurity)
 [![Build Status](https://travis-ci.com/nicoduj/homebridge-sepsadSecurity.svg?branch=master)](https://travis-ci.com/nicoduj/homebridge-sepsadSecurity)
