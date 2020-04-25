@@ -232,11 +232,7 @@ mySepsadSecurityPlatform.prototype = {
 
   getTargetSecuritySystemStateCharacteristic: function (service, callback) {
     callback(undefined, service.getCharacteristic(Characteristic.SecuritySystemTargetState).value);
-
-    //no operationInProgress, refresh current state
-    if (service.TargetSecuritySystemStateOperationStart == undefined) {
-      this.sepsadSecurityAPI.getSecuritySystem();
-    }
+    //handled through currentState
   },
 
   // Characteristic.SecuritySystemCurrentState.STAY_ARM = 0;
