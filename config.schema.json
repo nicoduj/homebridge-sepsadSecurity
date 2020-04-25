@@ -8,11 +8,7 @@
     "type": "object",
     "required": ["name", "username", "password"],
     "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string"
-      },
-      "username": {
+      "login": {
         "title": "Sepsad account login",
         "type": "string"
       },
