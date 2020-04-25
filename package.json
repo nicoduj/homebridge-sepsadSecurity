@@ -1,5 +1,5 @@
 {
-  "name": "homebridge-sepsadSecurity",
+  "name": "homebridge-sepsadsecurity",
   "version": "0.0.1",
   "author": "Nicolas Dujardin",
   "description": "Publish your sepsad security system as an homekit accessory",
