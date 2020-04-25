@@ -10,16 +10,15 @@
 [![Greenkeeper badge](https://badges.greenkeeper.io/nicoduj/homebridge-sepsadSecurity.svg)](https://greenkeeper.io/)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
-
 Plugin for controlling your [sepsad security system](https://www.sepsad-telesurveillance.fr/telesurveillance-integrale.aspx) from [Sepsad](https://www.sepsad-telesurveillance.fr) through [HomeBridge](https://github.com/nfarina/homebridge) .
 
 Might also work with [EPS] system since they seemed to be using same technical architecture (only rebranding).
 
 It was tested on my personnal installation which is nearly 4 years old so might not be working with latest installations ...
 
-*** !!!! IMPORTANT !!! ***
-*** PLEASE NOTE THAT SINCE DEACTVATING ISN OT ALLOWED THROUGH API, IT WON'T BE POSSIBLE TO DEACTIVATE THE SYSTEM THROUGH THE PLUGIN / HOMEBRIDGE ***
-*** !!!! IMPORTANT !!! ***
+**_ !!!! IMPORTANT !!! _**
+**_ PLEASE NOTE THAT SINCE DEACTVATING ISN OT ALLOWED THROUGH API, IT WON'T BE POSSIBLE TO DEACTIVATE THE SYSTEM THROUGH THE PLUGIN / HOMEBRIDGE _**
+**_ !!!! IMPORTANT !!! _**
 
 `npm install -g homebridge-sepsadSecurity`
 
@@ -31,7 +30,7 @@ Config as below:
 "platforms": [
   {
     "platform": "HomebridgeSepsadSecurity",
-	  "email": "toto@titi.com",
+    "login": "123456",
 	  "password": "toto"
   }
 ]
@@ -40,7 +39,7 @@ Config as below:
 Fields:
 
 - `platform` must be "HomebridgeSepsadSecurity" (required).
-- `email` email used for your sepsad account (required).
+- `login` login used for your sepsad account (required).
 - `password` password of your sepsad account (required).
 - `refreshTimer` Optional - enable refresh of security System state every X seconds, for automation purpose if you need to activate something else based on its state change (defaults : disable, accepted range : 60-3600s).
 
@@ -55,7 +54,6 @@ See [CHANGELOG][].
 Many thanks to :
 
 - every tester / contributor that test, and give feedback in any way !
-
 
 ## Donating
 

@@ -1,271 +1,401 @@
-var Service, Characteristic;
+var Service, Characteristic, Accessory, UUIDGen;
+
 var SepsadSecurityAPI = require('./sepsadSecurityAPI.js').SepsadSecurityAPI;
-const SepsadSecurityConst = require('./sepsadSecurityConst');
 const SepsadSecurityTools = require('./sepsadSecurityTools.js');
+const SepsadSecurityConst = require('./sepsadSecurityConst');
 
 function mySepsadSecurityPlatform(log, config, api) {
+  if (!config) {
+    log('No configuration found for homebridge-sepsadSecurity');
+    return;
+  }
+
+  this.api = api;
   this.log = log;
-  this.login = config['email'];
+  this.login = config['login'];
   this.password = config['password'];
   this.refreshTimer = SepsadSecurityTools.checkTimer(config['refreshTimer']);
+  this.refreshTimerDuringOperation = SepsadSecurityTools.checkParemeter(
+    config['refreshTimerDuringOperation'],
+    2,
+    15,
+    10
+  );
+  this.maxWaitTimeForOperation = SepsadSecurityTools.checkParemeter(
+    config['maxWaitTimeForOperation'],
+    30,
+    90,
+    45
+  );
+  this.originSession = config['originSession'] ? config['originSession'] : 'SEPSAD';
+
+  this.allowActivation = SepsadSecurityTools.checkBoolParameter(config['allowActivation'], false);
+
+  this.cleanCache = config['cleanCache'];
 
   this.foundAccessories = [];
+  this.sepsadSecurityAPI = new SepsadSecurityAPI(log, this);
 
-  this.SepsadSecurityAPI = new SepsadSecurityAPI(log, this);
+  this.loaded = false;
 
-  if (api) {
-    // Save the API object as plugin needs to register new accessory via this object
-    this.api = api;
-  }
+  this.api
+    .on(
+      'shutdown',
+      function () {
+        this.end();
+      }.bind(this)
+    )
+    .on(
+      'didFinishLaunching',
+      function () {
+        this.log('DidFinishLaunching');
+
+        if (this.cleanCache) {
+          this.log('WARNING - Removing Accessories');
+          this.api.unregisterPlatformAccessories(
+            'homebridge-sepsadSecurity',
+            'SepsadSecurity',
+            this.foundAccessories
+          );
+          this.foundAccessories = [];
+        }
+        this.discoverSecuritySystem();
+      }.bind(this)
+    );
 }
 
-module.exports = function(homebridge) {
+module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
+  Accessory = homebridge.platformAccessory;
+  UUIDGen = homebridge.hap.uuid;
+  HomebridgeAPI = homebridge;
   homebridge.registerPlatform(
     'homebridge-sepsadSecurity',
-    'HomebridgeSepsadSecurity',
-    mySepsadSecurityPlatform
+    'SepsadSecurity',
+    mySepsadSecurityPlatform,
+    true
   );
 };
 
 mySepsadSecurityPlatform.prototype = {
-  accessories: function(callback) {
-    this.SepsadSecurityAPI.authenticate(error => {
-      if (error) {
-        this.log.debug('ERROR - authenticating - ' + error);
-        callback(undefined);
-      } else {
-        this.SepsadSecurityAPI.getSecuritySystem(result => {
-          if (result) {
-            this.log.debug('SecuritySystem : ' + JSON.stringify(result));
-            let services = [];
-            let securitySystemName = result.name;
-            let securitySystemModel = result.model;
-            let securitySystemSeriaNumber = result.id;
+  configureAccessory: function (accessory) {
+    this.log.debug(accessory.displayName, 'Got cached Accessory ' + accessory.UUID);
 
-            let securityService = {
-              controlService: new Service.SecuritySystem(securitySystemName),
-              characteristics: [
-                Characteristic.SecuritySystemCurrentState,
-                Characteristic.SecuritySystemTargetState,
-              ],
-            };
+    this.foundAccessories.push(accessory);
+  },
 
-            securityService.controlService.subtype =
-              securitySystemName + ' SecurityService';
-            securityService.controlService.id = result.id;
-            services.push(securityService);
+  end() {
+    this.log('INFO - shutdown');
+    if (this.timerID) {
+      clearInterval(this.timerID);
+      this.timerID = undefined;
+    }
+    // disconnecting ?
+  },
 
-            let switchService = {
-              controlService: new Service.Switch(securitySystemName),
-              characteristics: [Characteristic.On],
-            };
-
-            switchService.controlService.subtype =
-              securitySystemName + ' Switch';
-            switchService.controlService.id = result.id;
-            services.push(switchService);
-
-            let mySecuritySystemAccessory = new SepsadSecurityTools.SepsadSecurityAccessory(
-              services
-            );
-            mySecuritySystemAccessory.getServices = function() {
-              return this.platform.getServices(mySecuritySystemAccessory);
-            };
-            mySecuritySystemAccessory.platform = this;
-            mySecuritySystemAccessory.name = securitySystemName;
-            mySecuritySystemAccessory.model = securitySystemModel;
-            mySecuritySystemAccessory.manufacturer = 'Sepsad';
-            mySecuritySystemAccessory.serialNumber = securitySystemSeriaNumber;
-            mySecuritySystemAccessory.securitySystemID = securitySystemSeriaNumber;
-            this.foundAccessories.push(mySecuritySystemAccessory);
-
-            //timer for background refresh
-            this.refreshBackground();
-
-            callback(this.foundAccessories);
-          } else {
-            //prevent homebridge from starting since we don't want to loose our doors.
-            this.log.debug('ERROR - gettingSecuritysystem - ' + error);
-            callback(undefined);
-          }
-        });
+  discoverSecuritySystem: function () {
+    this.sepsadSecurityAPI.on('securitySystemRefreshError', () => {
+      if (this.timerID == undefined) {
+        this.log('ERROR - discoverSecuritySystem - will retry in 1 minute');
+        setTimeout(() => {
+          this.sepsadSecurityAPI.getSecuritySystem();
+        }, 60000);
       }
     });
+
+    this.sepsadSecurityAPI.on('securitySystemRefreshed', () => {
+      this.log.debug('INFO - securitySystemRefreshed event');
+      if (!this.loaded) {
+        this.loadSecuritySystem();
+      } else {
+        this.updateSecuritySystem();
+      }
+    });
+
+    this.sepsadSecurityAPI.getSecuritySystem();
   },
 
-  updateState(callback, characteristic) {
-    var onn = false;
-    this.SepsadSecurityAPI.authenticate(error => {
-      if (error) {
-        callback(undefined, onn);
-      } else
-        this.SepsadSecurityAPI.getSecuritySystemState(result => {
-          this.log.debug(
-            'INFO - securitySystem result : ' + JSON.stringify(result)
-          );
-          if (
-            characteristic == Characteristic.SecuritySystemCurrentState ||
-            characteristic == Characteristic.SecuritySystemTargetState
-          ) {
-            switch (result) {
-              case SepsadSecurityConst.DISABLED:
-                callback(
-                  undefined,
-                  Characteristic.SecuritySystemTargetState.DISARM
-                );
-                break;
-              case SepsadSecurityConst.PARTIAL:
-                callback(
-                  undefined,
-                  Characteristic.SecuritySystemTargetState.NIGHT_ARM
-                );
-                break;
-              case SepsadSecurityConst.ACTIVATED:
-                callback(
-                  undefined,
-                  Characteristic.SecuritySystemTargetState.STAY_ARM
-                );
-                break;
-              default:
-                callback(-1);
-            }
+  loadSecuritySystem() {
+    if (this.sepsadSecurityAPI.securitySystem) {
+      this.log.debug(
+        'INFO - SecuritySystem : ' + JSON.stringify(this.sepsadSecurityAPI.securitySystem)
+      );
+      let securitySystemName = this.sepsadSecurityAPI.securitySystem.name;
+      let securitySystemModel = this.sepsadSecurityAPI.securitySystem.model;
+      let securitySystemSeriaNumber = this.sepsadSecurityAPI.securitySystem.id;
+
+      let uuid = UUIDGen.generate(securitySystemName);
+      let mySecuritySystemAccessory = this.foundAccessories.find((x) => x.UUID == uuid);
+
+      if (!mySecuritySystemAccessory) {
+        mySecuritySystemAccessory = new Accessory(securitySystemName, uuid);
+        mySecuritySystemAccessory.name = securitySystemName;
+        mySecuritySystemAccessory.model = securitySystemModel;
+        mySecuritySystemAccessory.manufacturer = 'Sepsad/EPS';
+        mySecuritySystemAccessory.serialNumber = securitySystemSeriaNumber;
+        mySecuritySystemAccessory.securitySystemID = securitySystemSeriaNumber;
+
+        mySecuritySystemAccessory
+          .getService(Service.AccessoryInformation)
+          .setCharacteristic(Characteristic.Manufacturer, mySecuritySystemAccessory.manufacturer)
+          .setCharacteristic(Characteristic.Model, mySecuritySystemAccessory.model)
+          .setCharacteristic(Characteristic.SerialNumber, mySecuritySystemAccessory.serialNumber);
+
+        this.api.registerPlatformAccessories('homebridge-sepsadSecurity', 'SepsadSecurity', [
+          mySecuritySystemAccessory,
+        ]);
+
+        this.foundAccessories.push(mySecuritySystemAccessory);
+      }
+
+      mySecuritySystemAccessory.securitySystemID = securitySystemSeriaNumber;
+      mySecuritySystemAccessory.name = securitySystemName;
+
+      let HKSecurityService = mySecuritySystemAccessory.getServiceByUUIDAndSubType(
+        securitySystemName,
+        'SecuritySystemService' + securitySystemName
+      );
+
+      if (!HKSecurityService) {
+        this.log('INFO - Creating SecurityService Service ' + securitySystemName);
+        HKSecurityService = new Service.SecuritySystem(
+          securitySystemName,
+          'SecuritySystemService' + securitySystemName
+        );
+        HKSecurityService.subtype = 'SecuritySystemService' + securitySystemName;
+        mySecuritySystemAccessory.addService(HKSecurityService);
+      }
+
+      this.bindSecuritySystemCurrentStateCharacteristic(HKSecurityService);
+      this.bindSecuritySystemTargetStateCharacteristic(HKSecurityService);
+
+      // Required Characteristics
+      //this.addCharacteristic(Characteristic.SecuritySystemCurrentState);
+      //this.addCharacteristic(Characteristic.SecuritySystemTargetState);
+      // Optional Characteristics
+      //this.addOptionalCharacteristic(Characteristic.StatusFault);
+      //this.addOptionalCharacteristic(Characteristic.StatusTampered);
+      //this.addOptionalCharacteristic(Characteristic.SecuritySystemAlarmType);
+      //this.addOptionalCharacteristic(Characteristic.Name);
+
+      this.updateSecuritySystem();
+      this.loaded = true;
+
+      //timer for background refresh
+      this.refreshBackground();
+    } else {
+      this.log(
+        'ERROR - discoverSecuritySystem - no security system found, will retry in 1 minute - ' +
+          result
+      );
+
+      setTimeout(() => {
+        this.sepsadSecurityAPI.getSecuritySystem();
+      }, 60000);
+    }
+  },
+
+  updateSecuritySystem() {
+    for (let a = 0; a < this.foundAccessories.length; a++) {
+      this.log.debug('INFO - refreshing - ' + this.foundAccessories[a].name);
+
+      let securitySystemResult = undefined;
+      if (
+        this.sepsadSecurityAPI.securitySystem &&
+        this.sepsadSecurityAPI.securitySystem.id == this.foundAccessories[a].securitySystemID
+      ) {
+        securitySystemResult = this.sepsadSecurityAPI.securitySystem;
+      }
+
+      if (securitySystemResult !== undefined) {
+        this.refreshSecuritySystem(this.foundAccessories[a], securitySystemResult);
+      } else {
+        this.log(
+          'ERROR - updateSecuritySystem - no result for securitySystem - ' +
+            this.foundAccessories[a].name
+        );
+      }
+    }
+  },
+
+  getCurrentSecuritySystemStateCharacteristic: function (service, callback) {
+    callback(undefined, service.getCharacteristic(Characteristic.SecuritySystemCurrentState).value);
+
+    //no operationInProgress, refresh current state
+    if (service.TargetSecuritySystemStateOperationStart == undefined) {
+      this.sepsadSecurityAPI.getSecuritySystem();
+    }
+  },
+
+  getTargetSecuritySystemStateCharacteristic: function (service, callback) {
+    callback(undefined, service.getCharacteristic(Characteristic.SecuritySystemTargetState).value);
+
+    //no operationInProgress, refresh current state
+    if (service.TargetSecuritySystemStateOperationStart == undefined) {
+      this.sepsadSecurityAPI.getSecuritySystem();
+    }
+  },
+
+  // Characteristic.SecuritySystemCurrentState.STAY_ARM = 0;
+  // Characteristic.SecuritySystemCurrentState.AWAY_ARM = 1;
+  // Characteristic.SecuritySystemCurrentState.NIGHT_ARM = 2;
+  // Characteristic.SecuritySystemCurrentState.DISARMED = 3;
+  // Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED = 4;
+  // */
+  // Characteristic.SecuritySystemTargetState.STAY_ARM = 0;
+  // Characteristic.SecuritySystemTargetState.AWAY_ARM = 1;
+  // Characteristic.SecuritySystemTargetState.NIGHT_ARM = 2;
+  // Characteristic.SecuritySystemTargetState.DISARM = 3;
+  setTargetSecuritySystemtateCharacteristic: function (service, value, callback) {
+    var currentValue = service.getCharacteristic(Characteristic.SecuritySystemTargetState).value;
+    var currentState = service.getCharacteristic(Characteristic.SecuritySystemCurrentState).value;
+    var that = this;
+
+    callback();
+
+    if (currentState != value) {
+      if (value < Characteristic.SecuritySystemTargetState.DISARM && this.allowActivation) {
+        this.log.debug(
+          'INFO - SET Characteristic.SecuritySystemTargetState - ' +
+            service.subtype +
+            ' - SecuritySystemCurrentState is ' +
+            this.sepsadSecurityAPI.getStateString(currentState)
+        );
+        this.sepsadSecurityAPI.activateSecuritySystem(service, function (error) {
+          if (error) {
+            that.endSecuritySystemOperation(service);
+            that.log.debug(
+              'ERROR - SET Characteristic.SecuritySystemTargetState - ' +
+                service.subtype +
+                ' error activating '
+            );
+
+            setTimeout(() => {
+              service
+                .getCharacteristic(Characteristic.SecuritySystemTargetState)
+                .updateValue(currentValue);
+              service
+                .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+                .updateValue(currentState);
+            }, 500);
           } else {
-            switch (result) {
-              case SepsadSecurityConst.DISABLED:
-                callback(undefined, false);
-                break;
-              case SepsadSecurityConst.PARTIAL:
-              case SepsadSecurityConst.ACTIVATED:
-                callback(undefined, true);
-                break;
-              default:
-                callback(-1);
-            }
+            that.beginSecuritySystemOperation(service, value);
+            that.log.debug(
+              'INFO - SET Characteristic.SecuritySystemTargetState - ' +
+                service.subtype +
+                ' success activating '
+            );
           }
         });
-    });
+      } else {
+        //CANCEL
+        setTimeout(() => {
+          service
+            .getCharacteristic(Characteristic.SecuritySystemTargetState)
+            .updateValue(currentValue);
+          service
+            .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+            .updateValue(currentState);
+        }, 500);
+      }
+    }
   },
 
-  activate(characteristic, value, callback) {
-    this.SepsadSecurityAPI.sendCommand(
-      value
-        ? SepsadSecurityConst.ACTIVATE_COMMAND
-        : SepsadSecurityConst.STOP_COMMAND,
-      characteristic,
-      callback
+  bindSecuritySystemCurrentStateCharacteristic: function (service) {
+    service.getCharacteristic(Characteristic.SecuritySystemCurrentState).on(
+      'get',
+      function (callback) {
+        this.getCurrentSecuritySystemStateCharacteristic(service, callback);
+      }.bind(this)
     );
   },
 
-  getSwitchOnCharacteristic: function(callback) {
-    this.log.debug('INFO - getSwitchOnCharacteristic');
-    this.updateState(callback, Characteristic.On);
+  bindSecuritySystemTargetStateCharacteristic: function (service) {
+    service
+      .getCharacteristic(Characteristic.SecuritySystemTargetState)
+      .on(
+        'get',
+        function (callback) {
+          this.getTargetSecuritySystemStateCharacteristic(service, callback);
+        }.bind(this)
+      )
+      .on(
+        'set',
+        function (value, callback) {
+          this.setTargetSecuritySystemtateCharacteristic(service, value, callback);
+        }.bind(this)
+      );
   },
 
-  setSwitchOnCharacteristic: function(characteristic, value, callback) {
-    this.log.debug('INFO - setSwitchOnCharacteristic - ' + value);
-    this.activate(characteristic, value, callback);
-  },
+  beginSecuritySystemOperation(service, state) {
+    //stop timer if one exists.
 
-  getSecuritySystemCurrentStateCharacteristic: function(callback) {
-    this.log.debug('INFO - getSecuritySystemCurrentStateCharacteristic');
-    this.updateState(callback, Characteristic.SecuritySystemCurrentState);
-  },
+    if (this.timerID !== undefined) {
+      clearInterval(this.timerID);
+      this.timerID = undefined;
+    }
 
-  // The value property of SecuritySystemTargetState must be one of the following:
-  /*
-  Characteristic.SecuritySystemTargetState.STAY_ARM = 0;
-  Characteristic.SecuritySystemTargetState.AWAY_ARM = 1;
-  Characteristic.SecuritySystemTargetState.NIGHT_ARM = 2;
-  Characteristic.SecuritySystemTargetState.DISARM = 3;
-  */
+    service.TargetSecuritySystemState = state;
+    service.TargetSecuritySystemStateOperationStart = Date.now();
 
-  getSecuritySystemTargetStateCharacteristic: function(callback) {
-    this.log.debug('INFO - getSecuritySystemTargetStateCharacteristic');
-    this.updateState(callback, Characteristic.SecuritySystemTargetState);
-  },
-  setSecuritySystemTargetStateCharacteristic: function(
-    characteristic,
-    value,
-    callback
-  ) {
+    //start operating timer
     this.log.debug(
-      'INFO - setSecuritySystemTargetStateCharacteristic - ' + value
+      'INFO - beginSecuritySystemOperation - ' + service.subtype + ' - Setting Timer for operation'
     );
-    this.activate(characteristic, value, callback);
+
+    this.timerID = setInterval(() => {
+      this.sepsadSecurityAPI.getSecuritySystem();
+    }, this.refreshTimerDuringOperation * 1000);
   },
 
-  // The value property of SecuritySystemCurrentState must be one of the following:
-  /*
-  Characteristic.SecuritySystemCurrentState.STAY_ARM = 0;
-  Characteristic.SecuritySystemCurrentState.AWAY_ARM = 1;
-  Characteristic.SecuritySystemCurrentState.NIGHT_ARM = 2;
-  Characteristic.SecuritySystemCurrentState.DISARMED = 3;
-  Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED = 4;
-  */
+  endSecuritySystemOperation(service) {
+    //stop timer for this operation
+    this.log.debug(
+      'INFO - endSecuritySystemOperation - ' + service.subtype + ' - Stopping operation'
+    );
 
-  bindCharacteristicEvents: function(
-    characteristic,
-    service,
-    homebridgeAccessory
-  ) {
-    if (
-      characteristic instanceof Characteristic.On &&
-      service.controlService instanceof Service.Switch
-    ) {
-      characteristic.on(
-        'get',
-        function(callback) {
-          homebridgeAccessory.platform.getSwitchOnCharacteristic(callback);
-        }.bind(this)
-      );
+    service.TargetSecuritySystemState = undefined;
+    service.TargetSecuritySystemStateOperationStart = undefined;
 
-      characteristic.on(
-        'set',
-        function(value, callback) {
-          homebridgeAccessory.platform.setSwitchOnCharacteristic(
-            characteristic,
-            value,
-            callback
-          );
-        }.bind(this)
-      );
-    } else if (
-      characteristic instanceof Characteristic.SecuritySystemCurrentState &&
-      service.controlService instanceof Service.SecuritySystem
-    ) {
-      characteristic.on(
-        'get',
-        function(callback) {
-          homebridgeAccessory.platform.getSecuritySystemCurrentStateCharacteristic(
-            callback
-          );
-        }.bind(this)
-      );
-    } else if (
-      characteristic instanceof Characteristic.SecuritySystemTargetState &&
-      service.controlService instanceof Service.SecuritySystem
-    ) {
-      characteristic.on(
-        'get',
-        function(callback) {
-          homebridgeAccessory.platform.getSecuritySystemTargetStateCharacteristic(
-            callback
-          );
-        }.bind(this)
-      );
+    this.checkEndOperation();
+  },
 
-      characteristic.on(
-        'set',
-        function(value, callback) {
-          homebridgeAccessory.platform.setSecuritySystemTargetStateCharacteristic(
-            characteristic,
-            value,
-            callback
-          );
-        }.bind(this)
-      );
+  checkEndOperation() {
+    //clear timer and set background again if no other operation in progress
+
+    if (this.timerID !== undefined) {
+      let operationInProgress = false;
+      for (let a = 0; a < this.foundAccessories.length; a++) {
+        let mySecuritySystemAccessory = this.foundAccessories[a];
+        for (let s = 0; s < mySecuritySystemAccessory.services.length; s++) {
+          let service = mySecuritySystemAccessory.services[s];
+          if (service.TargetSecuritySystemState !== undefined) {
+            operationInProgress = true;
+            break;
+          }
+        }
+        if (operationInProgress) break;
+      }
+
+      if (!operationInProgress) {
+        this.log.debug('Stopping Operation Timer ');
+        clearInterval(this.timerID);
+        this.timerID = undefined;
+        this.refreshBackground();
+      }
+    }
+  },
+
+  operationMode(result) {
+    if (result.state == SepsadSecurityConst.DISABLED) {
+      return Characteristic.SecuritySystemCurrentState.DISARMED;
+    } else if (result.state == SepsadSecurityConst.ACTIVATED) {
+      return Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+    } else if (result.state == SepsadSecurityConst.PARTIAL) {
+      return Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+    } else {
+      return -1;
     }
   },
 
@@ -273,122 +403,131 @@ mySepsadSecurityPlatform.prototype = {
     //timer for background refresh
     if (this.refreshTimer !== undefined && this.refreshTimer > 0) {
       this.log.debug(
-        'INFO - Setting Timer for background refresh every  : ' +
-          this.refreshTimer +
-          's'
+        'INFO - Setting Timer for background refresh every  : ' + this.refreshTimer + 's'
       );
       this.timerID = setInterval(
-        () => this.refreshSecuritySystems(),
+        () => this.sepsadSecurityAPI.getSecuritySystem(),
         this.refreshTimer * 1000
       );
     }
   },
 
-  refreshSecuritySystem: function() {
-    this.SepsadSecurityAPI.getSecuritySystemState(result => {
-      for (let s = 0; s < this.foundAccessories.length; s++) {
-        let mySepsadSecuritySystemAccessory = this.foundAccessories[a];
+  refreshSecuritySystem: function (mySepsadSecurityAccessory, result) {
+    let securitySystemName = mySepsadSecurityAccessory.name;
 
-        for (
-          let s = 0;
-          s < mySepsadSecuritySystemAccessory.services.length;
-          s++
-        ) {
-          let service = mySepsadSecuritySystemAccessory.services[s];
-          var value;
-
-          if (service.controlService.UUID == Service.SecuritySystem.UUID) {
-            switch (result) {
-              case SepsadSecurityConst.DISABLED:
-                value = Characteristic.SecuritySystemTargetState.DISARM;
-                break;
-              case SepsadSecurityConst.PARTIAL:
-                value = Characteristic.SecuritySystemTargetState.NIGHT_ARM;
-                break;
-              case SepsadSecurityConst.ACTIVATED:
-                value = Characteristic.SecuritySystemTargetState.STAY_ARM;
-                break;
-              default:
-                value = -1;
-            }
-            service.controlService
-              .getCharacteristic(Characteristic.SecuritySystemCurrentState)
-              .updateValue(value);
-          } else if (service.controlService.UUID == Service.Switch.UUID) {
-            switch (result) {
-              case SepsadSecurityConst.DISABLED:
-                value = false;
-                break;
-              case SepsadSecurityConst.PARTIAL:
-              case SepsadSecurityConst.ACTIVATED:
-                value = true;
-                break;
-              default:
-                value = -1;
-            }
-
-            service.controlService
-              .getCharacteristic(Characteristic.On)
-              .updateValue(value);
-          }
-        }
-      }
-    });
-  },
-
-  refreshSecuritySystem: function(mySepsadSecurityAccessory, result) {
-    for (let s = 0; s < mySepsadSecurityAccessory.services.length; s++) {
-      let service = mySepsadSecurityAccessory.services[s];
-
-      if (service.controlService instanceof Service.Switch) {
-        service.controlService
-          .getCharacteristic(Characteristic.On)
-          .updateValue(this.isInOperation(mySepsadSecurityAccessory, result));
-      }
-    }
-  },
-
-  getInformationService: function(homebridgeAccessory) {
-    let informationService = new Service.AccessoryInformation();
-    informationService
-      .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
-      .setCharacteristic(
-        Characteristic.Manufacturer,
-        homebridgeAccessory.manufacturer
-      )
-      .setCharacteristic(Characteristic.Model, homebridgeAccessory.model)
-      .setCharacteristic(
-        Characteristic.SerialNumber,
-        homebridgeAccessory.serialNumber
-      );
-    return informationService;
-  },
-
-  getServices: function(homebridgeAccessory) {
-    let services = [];
-    let informationService = homebridgeAccessory.platform.getInformationService(
-      homebridgeAccessory
+    let HKSecurityService = mySepsadSecurityAccessory.getServiceByUUIDAndSubType(
+      securitySystemName,
+      'SecuritySystemService' + securitySystemName
     );
-    services.push(informationService);
-    for (let s = 0; s < homebridgeAccessory.services.length; s++) {
-      let service = homebridgeAccessory.services[s];
-      for (let i = 0; i < service.characteristics.length; i++) {
-        let characteristic = service.controlService.getCharacteristic(
-          service.characteristics[i]
-        );
-        if (characteristic == undefined)
-          characteristic = service.controlService.addCharacteristic(
-            service.characteristics[i]
-          );
 
-        homebridgeAccessory.platform.bindCharacteristicEvents(
-          characteristic,
-          service,
-          homebridgeAccessory
+    if (!HKSecurityService) {
+      this.log('Error - refreshSecuritySystem - ' + securitySystemName + ' - no service found');
+      return;
+    }
+
+    let currentSecurityServiceState = this.operationMode(result);
+
+    let operationInProgress =
+      HKSecurityService.TargetSecuritySystemStateOperationStart !== undefined;
+    let operationInProgressIsFinished =
+      operationInProgress &&
+      HKSecurityService.TargetSecuritySystemState == currentSecurityServiceState;
+
+    let oldSecurityServiceState = HKSecurityService.getCharacteristic(
+      Characteristic.SecuritySystemCurrentState
+    ).value;
+    let oldTargetState = HKSecurityService.getCharacteristic(
+      Characteristic.SecuritySystemTargetState
+    ).value;
+
+    this.log.debug(
+      'INFO - refreshSecuritySystem - Got Status for : ' +
+        HKSecurityService.subtype +
+        ' - (currentState/operationInProgress/operationInProgressIsFinished/oldState/oldTargetState) : (' +
+        currentSecurityServiceState +
+        '/' +
+        operationInProgress +
+        '/' +
+        operationInProgressIsFinished +
+        '/' +
+        oldSecurityServiceState +
+        '/' +
+        oldTargetState +
+        ')'
+    );
+
+    var newSecurityServiceState = oldSecurityServiceState;
+    var newTargetState = oldTargetState;
+
+    //operation has finished or timed out
+
+    if (operationInProgressIsFinished || this.endOperation(HKSecurityService, result)) {
+      this.endSecuritySystemOperation(HKSecurityService);
+      if (!operationInProgressIsFinished) {
+        this.log(
+          'WARNING - refreshSecuritySystem - ' +
+            HKSecurityService.subtype +
+            ' - operation was in progress and has timedout or no status retrieval'
         );
       }
-      services.push(service.controlService);
+      newSecurityServiceState = currentSecurityServiceState;
+      newTargetState = currentSecurityServiceState;
+    } else if (!operationInProgress && currentSecurityServiceState != oldSecurityServiceState) {
+      newSecurityServiceState = currentSecurityServiceState;
+      newTargetState = currentSecurityServiceState;
     }
-    return services;
+
+    if (newTargetState != oldTargetState) {
+      this.log.debug(
+        'INFO - refreshSecuritySystem - ' +
+          HKSecurityService.subtype +
+          ' updating TargetState to : ' +
+          newTargetState +
+          '-' +
+          this.sepsadSecurityAPI.getStateString(newTargetState)
+      );
+      //TargetState before CurrentState
+      setImmediate(() => {
+        HKSecurityService.getCharacteristic(Characteristic.SecuritySystemTargetState).updateValue(
+          newTargetState
+        );
+      });
+    }
+
+    if (newSecurityServiceState != oldSecurityServiceState) {
+      this.log.debug(
+        'INFO - refreshSecuritySystem - ' +
+          HKSecurityService.subtype +
+          ' updating CurrenState to : ' +
+          this.sepsadSecurityAPI.getStateString(newSecurityServiceState)
+      );
+      setImmediate(() => {
+        HKSecurityService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(
+          newSecurityServiceState
+        );
+      });
+    }
+  },
+
+  endOperation(service, result) {
+    // TODO CHECK CHECK
+    if (result.state == SepsadSecurityConst.UNKNOWN) return true;
+
+    //timeout
+
+    if (
+      service.TargetSecuritySystemState !== undefined &&
+      service.TargetSecuritySystemStateOperationStart !== undefined
+    ) {
+      let elapsedTime = Date.now() - service.TargetSecuritySystemStateOperationStart;
+      this.log.debug(
+        'INFO - CheckTimeout / result : ' + result + ' - elapsedTime : ' + elapsedTime
+      );
+      if (elapsedTime > this.maxWaitTimeForOperation * 1000) {
+        return true;
+      }
+    }
+
+    return false;
   },
 };
