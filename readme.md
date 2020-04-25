@@ -16,10 +16,13 @@ Might also work with [EPS] system since they seemed to be using same technical a
 
 It was tested on my personnal installation which is nearly 4 years old so might not be working with latest installations ...
 
-**_ !!!! IMPORTANT !!! _**
-**_ PLEASE NOTE THAT SINCE DEACTVATING IS NOT ALLOWED THROUGH API, IT WON'T BE POSSIBLE TO DEACTIVATE THE SYSTEM THROUGH THE PLUGIN / HOMEBRIDGE _**
-**_ so defautl option to activate is off _**
-**_ !!!! IMPORTANT !!! _**
+**!!!! IMPORTANT !!!**
+
+**PLEASE NOTE THAT SINCE DEACTVATING IS NOT ALLOWED THROUGH API, IT WON'T BE POSSIBLE TO DEACTIVATE THE SYSTEM THROUGH THE PLUGIN / HOMEBRIDGE**
+
+**So defautl option to activate the system is off**
+
+**!!!! IMPORTANT !!!**
 
 `npm install -g homebridge-sepsadSecurity`
 
