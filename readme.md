@@ -1,12 +1,12 @@
-# homebridge-sepsadSecurity
+# homebridge-sepsadsecurity
 
-[![npm](https://img.shields.io/npm/v/homebridge-sepsadSecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadSecurity)
-[![npm](https://img.shields.io/npm/dw/homebridge-sepsadSecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadSecurity)
-[![npm](https://img.shields.io/npm/dt/homebridge-sepsadSecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadSecurity)
+[![npm](https://img.shields.io/npm/v/homebridge-sepsadsecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadsecurity)
+[![npm](https://img.shields.io/npm/dw/homebridge-sepsadsecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadsecurity)
+[![npm](https://img.shields.io/npm/dt/homebridge-sepsadsecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadsecurity)
 
-[![CodeFactor](https://www.codefactor.io/repository/github/nicoduj/homebridge-sepsadSecurity/badge)](https://www.codefactor.io/repository/github/nicoduj/homebridge-sepsadSecurity)
-[![Build Status](https://travis-ci.com/nicoduj/homebridge-sepsadSecurity.svg?branch=master)](https://travis-ci.com/nicoduj/homebridge-sepsadSecurity)
-[![Known Vulnerabilities](https://snyk.io/test/github/nicoduj/homebridge-sepsadSecurity/badge.svg?targetFile=package.json)](https://snyk.io/test/github/nicoduj/homebridge-sepsadSecurity?targetFile=package.json)
+[![CodeFactor](https://www.codefactor.io/repository/github/nicoduj/homebridge-sepsadsecurity/badge)](https://www.codefactor.io/repository/github/nicoduj/homebridge-sepsadsecurity)
+[![Build Status](https://travis-ci.com/nicoduj/homebridge-sepsadsecurity.svg?branch=master)](https://travis-ci.com/nicoduj/homebridge-sepsadsecurity)
+[![Known Vulnerabilities](https://snyk.io/test/github/nicoduj/homebridge-sepsadsecurity/badge.svg?targetFile=package.json)](https://snyk.io/test/github/nicoduj/homebridge-sepsadsecurity?targetFile=package.json)
 
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
@@ -24,7 +24,7 @@ It was tested on my personnal installation which is nearly 4 years old so might 
 
 **!!!! IMPORTANT !!!**
 
-`npm install -g homebridge-sepsadSecurity`
+`npm install -g homebridge-sepsadsecurity`
 
 ## Homebridge configuration
 
@@ -33,7 +33,7 @@ Config as below:
 ```json
 "platforms": [
   {
-    "platform": "HomebridgeSepsadSecurity",
+    "platform": "SepsadSecurity",
     "login": "123456",
     "password": "toto",
     "originSession": "SEPSAD",

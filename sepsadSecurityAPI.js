@@ -18,7 +18,7 @@ function SepsadSecurityAPI(log, platform) {
   this.login = platform.login;
   this.password = platform.password;
   this.originSession = platform.originSession;
-  this.securitySystem = undefined;
+  this.securitySystem = {};
 
   this.tokenHeaders = {
     accept: '*/*',
@@ -52,7 +52,7 @@ SepsadSecurityAPI.prototype = {
   authenticate: function (callback) {
     var dte = new Date();
 
-    if (!this.token || (this.access_token && this.loginExpires && this.loginExpires < dte)) {
+    if (!this.access_token || (this.access_token && this.loginExpires && this.loginExpires < dte)) {
       this.log.debug('INFO - authenticating');
 
       var that = this;
@@ -99,15 +99,6 @@ SepsadSecurityAPI.prototype = {
                 system: '',
               };
 
-              //DEBUG
-              /*
-              mutex.unlock();
-              callback();
-
-              that.log.debug('INFO - jsonBody  : ' + JSON.stringify(jsonBody));
-              that.log.debug('INFO - apiHeaders  : ' + JSON.stringify(that.apiHeaders));
-              */
-
               request(
                 {
                   url: that.apiURL + 'connect',
@@ -118,8 +109,8 @@ SepsadSecurityAPI.prototype = {
                 },
                 function (error, response, body) {
                   that.log.debug('INFO - connect error : ' + error);
-                  that.log.debug('INFO - connect response : ' + JSON.stringify(response));
-                  that.log.debug('INFO - connect body : ' + JSON.stringify(body));
+                  // that.log.debug('INFO - connect response : ' + JSON.stringify(response));
+                  // that.log.debug('INFO - connect body : ' + JSON.stringify(body));
                   mutex.unlock();
 
                   if (error || (response && response.statusCode !== 200)) {
@@ -127,8 +118,9 @@ SepsadSecurityAPI.prototype = {
                     callback(-1);
                   } else {
                     that.idSession = body.idSession;
-                    that.securitySystem = {};
+
                     that.securitySystem.name = body.sites[0].title;
+                    that.securitySystem.procedure = body.sites[0].procedure; // INTERVENTION or ?
                     that.securitySystem.model = that.originSession;
                     that.securitySystem.id = body.sites[0].siteId;
 
@@ -155,7 +147,7 @@ SepsadSecurityAPI.prototype = {
       } else {
         request(
           {
-            url: that.apiURL + 'system/status/' + that.idSession + '/0/0/0/0',
+            url: that.apiURL + 'homepage/' + that.idSession,
             method: 'GET',
             headers: that.apiHeaders,
             json: true,
@@ -166,16 +158,50 @@ SepsadSecurityAPI.prototype = {
             that.log.debug('INFO - status body : ' + JSON.stringify(body));
 
             if (error || (response && response.statusCode !== 200)) {
-              that.log('ERROR - connect body : ' + JSON.stringify(body));
+              that.log('ERROR - status body : ' + JSON.stringify(body));
               that.emit('securitySystemRefreshError');
             } else {
-              that.log('INFO - system Mode : ' + body.securityParameters.mode);
-
-              if (body.securityParameters.mode == 'OFF')
-                that.securitySystem.state = SepsadSecurityConst.DISABLED;
-              else that.securitySystem.state = SepsadSecurityConst.ACTIVATED;
-
+              that.securitySystem.security = body.security;
+              that.securitySystem.fire = body.fire;
+              that.securitySystem.temperature = body.temperature;
+              that.securitySystem.systemLastState = body.systemLastState;
               that.emit('securitySystemRefreshed');
+            }
+          }
+        );
+      }
+    });
+  },
+
+  getTemperature() {
+    const that = this;
+
+    this.authenticate((error) => {
+      if (error) {
+        that.emit('securitySystemTemperatureRefreshError');
+      } else {
+        request(
+          {
+            url: that.apiURL + 'temperature/followup/last/' + that.idSession,
+            method: 'GET',
+            headers: that.apiHeaders,
+            json: true,
+          },
+          function (error, response, body) {
+            that.log.debug('INFO - getTemperature error : ' + error);
+            that.log.debug('INFO - getTemperature response : ' + JSON.stringify(response));
+            that.log.debug('INFO - getTemperature body : ' + JSON.stringify(body));
+
+            if (error || (response && response.statusCode !== 200)) {
+              that.log('ERROR - getTemperature body : ' + JSON.stringify(body));
+              that.emit('securitySystemTemperatureRefreshError');
+            } else {
+              that.securitySystem.temperatureInfo = body.statements;
+              that.log.debug(
+                'INFO - temperature info: ' + JSON.stringify(that.securitySystem.temperatureInfo)
+              );
+
+              that.emit('securitySystemTemperatureRefreshed');
             }
           }
         );
@@ -187,29 +213,38 @@ SepsadSecurityAPI.prototype = {
     //generate error
     //callback(true);
     //no error
+    //callback false
     const that = this;
 
     this.authenticate((error) => {
       if (error) {
-        callback(false);
+        callback(true);
       } else {
+        var jsonBody = {
+          idSession: that.idSession,
+          silentMode: false,
+          interventionService: that.securitySystem.procedure == 'INTERVENTION' ? true : false,
+          systemMode: mode, // PARTIAL or "TOTAL"
+        };
+
         request(
           {
-            url: that.apiURL + 'system/SetStatus/' + that.idSession + '/0/0/0/0',
+            url: that.apiURL + 'system/askstart/',
             method: 'POST',
             headers: that.apiHeaders,
+            body: jsonBody,
             json: true,
           },
           function (error, response, body) {
-            that.log.debug('INFO - SetStatus error : ' + error);
-            that.log.debug('INFO - SetStatus response : ' + JSON.stringify(response));
-            that.log.debug('INFO - SetStatus body : ' + JSON.stringify(body));
+            that.log.debug('INFO - activateSecuritySystem error : ' + error);
+            that.log.debug('INFO - activateSecuritySystem response : ' + JSON.stringify(response));
+            that.log.debug('INFO - activateSecuritySystem body : ' + JSON.stringify(body));
 
             if (error || (response && response.statusCode !== 200)) {
-              that.log('ERROR - SetStatus body : ' + JSON.stringify(body));
-              callback(false);
-            } else {
+              that.log('ERROR - activateSecuritySystem body : ' + JSON.stringify(body));
               callback(true);
+            } else {
+              callback(false);
             }
           }
         );

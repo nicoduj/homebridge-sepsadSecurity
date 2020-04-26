@@ -1,8 +1,8 @@
 ACTIVATE_COMMAND = '/control/start/';
 STOP_COMMAND = '/control/park/duration/timer';
-ACTIVATED = 'ACTIVATED';
+ACTIVATED = 'TOTAL';
 PARTIAL = 'PARTIAL';
-DISABLED = 'DISABLED';
+DISABLED = 'OFF';
 UNKNOWN = 'UNKNOWN';
 
 module.exports = {

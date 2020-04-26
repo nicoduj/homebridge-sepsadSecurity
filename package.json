@@ -1,6 +1,6 @@
 {
   "name": "homebridge-sepsadsecurity",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "author": "Nicolas Dujardin",
   "description": "Publish your sepsad security system as an homekit accessory",
   "main": "index.js",
@@ -10,7 +10,7 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nicoduj/homebridge-sepsadSecurity.git"
+    "url": "git+https://github.com/nicoduj/homebridge-sepsadsecurity.git"
   },
   "engines": {
     "homebridge": ">=0.4.50",
@@ -29,9 +29,9 @@
     "request": "^2.88.2"
   },
   "bugs": {
-    "url": "https://github.com/nicoduj/homebridge-sepsadSecurity/issues"
+    "url": "https://github.com/nicoduj/homebridge-sepsadsecurity/issues"
   },
-  "homepage": "https://github.com/nicoduj/homebridge-sepsadSecurity#readme",
+  "homepage": "https://github.com/nicoduj/homebridge-sepsadsecurity#readme",
   "devDependencies": {
     "husky": "^3.1.0",
     "prettier": "2.0.0",
