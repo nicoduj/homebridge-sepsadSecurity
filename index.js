@@ -927,7 +927,7 @@ mySepsadSecurityPlatform.prototype = {
       return;
     } else {
       let currentSmokeStatus = HKSmokeSensorService.getCharacteristic(Characteristic.SmokeDetected);
-      if (currentStatus != newSmokeStatus)
+      if (currentSmokeStatus != newSmokeStatus)
         HKSmokeSensorService.getCharacteristic(Characteristic.SmokeDetected).updateValue(
           newSmokeStatus
         );

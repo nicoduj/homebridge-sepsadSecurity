@@ -1,4 +1,3 @@
-const SepsadSecurityConst = require('./sepsadSecurityConst');
 const request = require('request');
 var locks = require('locks');
 var mutex = locks.createMutex();
