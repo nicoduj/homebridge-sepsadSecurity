@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.1.1
+
+- [FIX] handling more errors
+- [NEW] funding
+
 ## 0.1.0
 
 - [NEW] smoke and temp sensors

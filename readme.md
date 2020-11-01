@@ -47,7 +47,7 @@ Fields:
 - `platform` must be "HomebridgeSepsadSecurity" (required).
 - `login` login used for your sepsad account (required).
 - `password` password of your sepsad account (required).
-- `originSession` defaults to "SEPSAD". Can try other values for EPS, might work who knows :)
+- `originSession` defaults to "SEPSAD". "EPS" was reported to work for EPS system
 - `refreshTimer` Optional - enable refresh of security System state every X seconds, for automation purpose if you need to activate something else based on its state change (defaults : disable, accepted range : 60-3600s).
 - `maxWaitTimeForOperation` Optional - set the maximum time that we wait for operation to complete. When elapsed, check the current State again and updates accordingly. (defaults : 20s, accepted range : 30-90s).
 - `refreshTimerDuringOperation` Optional - set the refresh timer during operation in progress to detect the end of the operation. (defaults : 5s, accepted range : 2-15s).

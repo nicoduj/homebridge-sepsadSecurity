@@ -1,6 +1,6 @@
 {
   "name": "homebridge-sepsadsecurity",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "Nicolas Dujardin",
   "description": "Publish your sepsad security system as an homekit accessory",
   "main": "index.js",
@@ -50,12 +50,12 @@
   },
   "funding": [
     {
-      "type" : "github",
-      "url" : "https://github.com/sponsors/nicoduj/"
+      "type": "github",
+      "url": "https://github.com/sponsors/nicoduj/"
     },
     {
-      "type" : "paypal",
-      "url" : "https://www.paypal.me/nicoduj/"
+      "type": "paypal",
+      "url": "https://www.paypal.me/nicoduj/"
     }
   ]
 }

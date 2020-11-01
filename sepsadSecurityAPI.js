@@ -48,6 +48,26 @@ SepsadSecurityAPI.prototype = {
     else if (state == 4) return 'ALARM_TRIGGERED';
   },
 
+  /*
+  [4/27/2020, 12:05:56 AM] [SepsadSecurity] ERROR - status body : "<html><body><h1>Service Unavailable</h1></body></html>"
+[4/27/2020, 12:08:56 AM] [SepsadSecurity] ERROR - status body : "<html><body><h1>Service Unavailable</h1></body></html>"
+[4/27/2020, 12:11:56 AM] [SepsadSecurity] ERROR - status body : "<html><body><h1>Service Unavailable</h1></body></html>"
+[4/27/2020, 12:14:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
+[4/27/2020, 12:17:51 AM] [NicoNetatmo] Loading new data from API for: weatherstation
+[4/27/2020, 12:17:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
+[4/27/2020, 12:20:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
+[4/27/2020, 12:23:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
+[4/27/2020, 12:26:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
+[4/27/2020, 12:29:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
+
+*/
+
+  disconnect: function () {
+    this.access_token = undefined;
+    this.loginExpires = undefined;
+    this.loginExpiry = undefined;
+  },
+
   authenticate: function (callback) {
     var dte = new Date();
 
@@ -114,6 +134,7 @@ SepsadSecurityAPI.prototype = {
 
                   if (error || (response && response.statusCode !== 200)) {
                     that.log('ERROR - connect body : ' + JSON.stringify(body));
+                    that.disconnect();
                     callback(-1);
                   } else {
                     that.idSession = body.idSession;
@@ -158,6 +179,8 @@ SepsadSecurityAPI.prototype = {
 
             if (error || (response && response.statusCode !== 200)) {
               that.log('ERROR - status body : ' + JSON.stringify(body));
+              // we disconnect just in case :)
+              that.disconnect();
               that.emit('securitySystemRefreshError');
             } else {
               that.securitySystem.security = body.security;
@@ -193,6 +216,7 @@ SepsadSecurityAPI.prototype = {
 
             if (error || (response && response.statusCode !== 200)) {
               that.log('ERROR - getTemperature body : ' + JSON.stringify(body));
+              that.disconnect();
               that.emit('securitySystemTemperatureRefreshError');
             } else {
               that.securitySystem.temperatureInfo = body.statements;
