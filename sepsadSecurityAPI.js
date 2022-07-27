@@ -135,7 +135,7 @@ SepsadSecurityAPI.prototype = {
                     that.securitySystem.name = body.sites[0].title;
                     that.securitySystem.procedure = body.sites[0].procedure; // INTERVENTION or ?
                     that.securitySystem.model = that.originSession;
-                    that.securitySystem.id = body.sites[0].siteId;
+                    that.securitySystem.id = body.sites[0].title;
 
                     callback();
                   }
