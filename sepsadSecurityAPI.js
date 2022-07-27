@@ -23,12 +23,16 @@ function SepsadSecurityAPI(log, platform) {
     accept: '*/*',
     'Content-type': 'application/x-www-form-urlencoded',
     authorization:
-      'Basic emVWRkd3MTNNZE5rTFdSaU1pclBCT0tlemNvYTpod3lfa1BiemtpazUwWkMyZ1NEVmdickRGdDBh',
+      'Basic NHhSOG1LZFk5OFBRalpkNU1NUzJRNWZYWl9RYTpEajkwbF9IOGs3WGJvZ1pTbzl3MUxTemxOZ01h',
+    Host: 'y41hsspp-mobile.eps-api.com',
   };
 
   this.connectHeaders = {
     accept: '*/*',
     'Content-type': 'application/json',
+    Host: 'y41hsspp-mobile.eps-api.com',
+    'Eps-Ctx-Username': this.login,
+    'Eps-Ctx-Source': 'MOB-ABO',
   };
 
   this.apiHeaders = {
@@ -36,7 +40,8 @@ function SepsadSecurityAPI(log, platform) {
     'Content-type': 'application/json',
   };
 
-  this.apiURL = 'https://www.eps-wap.fr/smartphone/Production/4.0/?/';
+  //this.apiURL = 'https://www.eps-wap.fr/smartphone/Production/4.0/?/';
+  this.apiURL = 'https://y41hsspp-mobile.eps-api.com/';
 }
 
 SepsadSecurityAPI.prototype = {
@@ -47,20 +52,6 @@ SepsadSecurityAPI.prototype = {
     else if (state == 3) return 'DISARMED';
     else if (state == 4) return 'ALARM_TRIGGERED';
   },
-
-  /*
-  [4/27/2020, 12:05:56 AM] [SepsadSecurity] ERROR - status body : "<html><body><h1>Service Unavailable</h1></body></html>"
-[4/27/2020, 12:08:56 AM] [SepsadSecurity] ERROR - status body : "<html><body><h1>Service Unavailable</h1></body></html>"
-[4/27/2020, 12:11:56 AM] [SepsadSecurity] ERROR - status body : "<html><body><h1>Service Unavailable</h1></body></html>"
-[4/27/2020, 12:14:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
-[4/27/2020, 12:17:51 AM] [NicoNetatmo] Loading new data from API for: weatherstation
-[4/27/2020, 12:17:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
-[4/27/2020, 12:20:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
-[4/27/2020, 12:23:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
-[4/27/2020, 12:26:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
-[4/27/2020, 12:29:57 AM] [SepsadSecurity] ERROR - status body : {"keyMessage":"SESSION_EXPIREE","level":"CONNECTION"}
-
-*/
 
   disconnect: function () {
     this.access_token = undefined;
@@ -118,11 +109,13 @@ SepsadSecurityAPI.prototype = {
                 system: '',
               };
 
+              that.connectHeaders['authorization'] = 'Bearer ' + that.access_token;
+
               request(
                 {
-                  url: that.apiURL + 'connect',
+                  url: that.apiURL + 'smartphone/production/1.0.0/connect',
                   method: 'POST',
-                  headers: that.apiHeaders,
+                  headers: that.connectHeaders,
                   body: jsonBody,
                   json: true,
                 },
@@ -132,7 +125,7 @@ SepsadSecurityAPI.prototype = {
                   // that.log.debug('INFO - connect body : ' + JSON.stringify(body));
                   mutex.unlock();
 
-                  if (error || (response && response.statusCode !== 200)) {
+                  if (error != null || (response && response.statusCode !== 200)) {
                     that.log('ERROR - connect body : ' + JSON.stringify(body));
                     that.disconnect();
                     callback(-1);
@@ -167,7 +160,7 @@ SepsadSecurityAPI.prototype = {
       } else {
         request(
           {
-            url: that.apiURL + 'homepage/' + that.idSession,
+            url: that.apiURL + 'smartphone/production/1.0.0/homepage/' + that.idSession,
             method: 'GET',
             headers: that.apiHeaders,
             json: true,
@@ -204,7 +197,10 @@ SepsadSecurityAPI.prototype = {
       } else {
         request(
           {
-            url: that.apiURL + 'temperature/followup/last/' + that.idSession,
+            url:
+              that.apiURL +
+              'smartphone/production/1.0.0/temperature/followup/last/' +
+              that.idSession,
             method: 'GET',
             headers: that.apiHeaders,
             json: true,

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.2.0
+
+- [FIX] new sepsad api auth method #5
+
 ## 0.1.1
 
 - [FIX] handling more errors
