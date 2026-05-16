@@ -1,11 +1,18 @@
 # homebridge-sepsadsecurity
 
+> [!CAUTION]
+> **This repository is archived and no longer maintained.**
+> No issues, pull requests, or support requests will be addressed.
+> Use this code at your own risk. For alternatives, see [XYZ](#).
+
+![Maintenance](https://img.shields.io/badge/maintenance-archived-red)
+![Status](https://img.shields.io/badge/status-no%20longer%20maintained-lightgrey)
+
 [![npm](https://img.shields.io/npm/v/homebridge-sepsadsecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadsecurity)
 [![npm](https://img.shields.io/npm/dw/homebridge-sepsadsecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadsecurity)
 [![npm](https://img.shields.io/npm/dt/homebridge-sepsadsecurity.svg)](https://www.npmjs.com/package/homebridge-sepsadsecurity)
 
 [![CodeFactor](https://www.codefactor.io/repository/github/nicoduj/homebridge-sepsadsecurity/badge)](https://www.codefactor.io/repository/github/nicoduj/homebridge-sepsadsecurity)
-[![Build Status](https://travis-ci.com/nicoduj/homebridge-sepsadsecurity.svg?branch=master)](https://travis-ci.com/nicoduj/homebridge-sepsadsecurity)
 [![Known Vulnerabilities](https://snyk.io/test/github/nicoduj/homebridge-sepsadsecurity/badge.svg?targetFile=package.json)](https://snyk.io/test/github/nicoduj/homebridge-sepsadsecurity?targetFile=package.json)
 
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
